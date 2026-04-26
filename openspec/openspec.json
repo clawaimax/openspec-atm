@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "name": "ATM OpenSpec Demo",
+  "description": "OpenSpec demonstration project using a simple ATM machine domain",
+  "specs_dir": "specs",
+  "changes_dir": "changes",
+  "editor": {
+    "cursor": true,
+    "rules_file": "../.cursor/rules/openspec.mdc"
+  }
+}

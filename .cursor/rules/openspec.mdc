@@ -1,0 +1,42 @@
+---
+description: OpenSpec awareness for Cursor — ATM demo project
+globs:
+  - "openspec/**/*.md"
+  - "src/**/*.py"
+  - "tests/**/*.py"
+alwaysApply: true
+---
+
+# OpenSpec — ATM Demo Project
+
+## Spec locations
+
+- **Accepted specs**: `openspec/specs/*/spec.md`
+  - `authentication` — PIN validation, session lockout
+  - `balance-inquiry` — check account balance
+  - `withdrawal` — withdraw cash, fund/cash validation
+
+- **Proposed changes**: `openspec/changes/*/`
+  - `add-deposit` (ADD) — new deposit capability
+  - `add-transfer` (ADD) — new fund transfer capability
+  - `modify-authentication-lockout` (MODIFY) — configurable lockout threshold
+  - `remove-receipt-option` (REMOVE) — strip receipt mention from balance-inquiry spec
+
+## Key rules
+
+1. Before implementing a feature, check `openspec/specs/` for an accepted spec.
+2. For proposed features, check `openspec/changes/` for the delta spec and design.
+3. Test names must mirror the scenario titles in the corresponding spec file.
+4. Do not add a scenario to a spec without a corresponding test (and vice-versa).
+5. When a change is accepted, move its delta spec into `openspec/specs/` and remove
+   (or archive) the change folder.
+6. Never implement something in `openspec/changes/` without first promoting it to
+   `openspec/specs/` (unless it is explicitly an in-progress, unapproved change).
+
+## Implementation map
+
+| Spec | Source file | Test file |
+|------|-------------|-----------|
+| authentication | `src/atm/session.py`, `src/atm/atm.py` | `tests/test_authentication.py` |
+| balance-inquiry | `src/atm/atm.py` | `tests/test_balance_inquiry.py` |
+| withdrawal | `src/atm/atm.py` | `tests/test_withdrawal.py` |
