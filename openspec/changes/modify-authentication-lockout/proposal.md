@@ -1,42 +1,22 @@
----
-id: modify-authentication-lockout
-type: MODIFY
-status: proposed
-target_spec: openspec/specs/authentication/spec.md
----
+# Proposal: Configurable Authentication Lockout Threshold
 
-# Proposal: Modify Authentication — Configurable Lockout Threshold
-
-## Summary
-
-Change the account lockout threshold from a hard-coded constant of **3** failed PIN
-attempts to a **configurable value** that can be set per-ATM at startup. This is a
-MODIFY to the existing `authentication` spec.
-
-## Motivation
-
-Security teams require different ATMs (e.g., high-traffic public kiosks vs. branch
-vestibule machines) to enforce different lockout policies without code changes. The
-current constant (`MAX_PIN_ATTEMPTS = 3` in `session.py`) cannot be overridden without
-modifying source code.
-
-## What Changes
-
-| Aspect | Before | After |
-|--------|--------|-------|
-| Lockout threshold | Hard-coded `3` | Configurable per ATM instance (default `3`) |
-| `ATM.__init__` | No lockout parameter | Accepts `max_pin_attempts: int = 3` |
-| `Session.__init__` | Uses module constant | Receives `max_attempts` from ATM |
-| Spec scenarios | Assume exactly 3 attempts | Updated to say "configured number of attempts" |
+## Intent
+Security teams need different ATMs (e.g., high-traffic public kiosks vs. branch vestibule
+machines) to enforce different lockout policies without code changes. The current hard-coded
+constant (`MAX_PIN_ATTEMPTS = 3` in `session.py`) cannot be overridden at deployment time.
 
 ## Scope
+In scope:
+- `ATM` dataclass accepts `max_pin_attempts: int = 3` at construction
+- `Session` receives the threshold value instead of reading the module constant
+- Authentication spec updated to say "configured threshold" instead of "three"
+- New test scenario verifying a non-default threshold is respected
 
-- `openspec/specs/authentication/spec.md` — update language (see delta spec)
-- `src/atm/session.py` — accept `max_attempts` parameter
-- `src/atm/atm.py` — pass configurable value to Session on `insert_card()`
-- `tests/test_authentication.py` — add scenario for non-default threshold
+Out of scope:
+- Persistent lockout across sessions (still session-scoped)
+- Admin UI or runtime config changes after ATM startup
 
-## Out of Scope
-
-- Persistent lockout across sessions (still session-scoped).
-- Admin UI to change the threshold at runtime.
+## Approach
+Add `max_pin_attempts: int = 3` to the `ATM` dataclass. Pass it to each new `Session`
+via `insert_card()`. Replace the `MAX_PIN_ATTEMPTS` module constant with an instance
+field on `Session`. Default of `3` preserves existing behaviour with no breaking change.

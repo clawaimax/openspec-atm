@@ -1,35 +1,41 @@
----
-id: add-deposit
-type: ADD
-artifact: design
----
-
 # Design: Deposit Functionality
 
-## Approach
+## Technical Approach
+Deposit is the mirror image of withdrawal. Both `deposit_cash()` and `deposit_check()`
+reuse the same authentication guard (`_require_auth()`) and transaction recording pattern
+established for `ATM.withdraw()`. Cash deposits increase both account balance and ATM cash
+level. Cheque deposits update the account balance and create a transaction with a
+pending-hold flag representing clearance lag; they do not add physical cash to the machine.
 
-Deposit is the mirror image of withdrawal. It re-uses the same authentication guard
-(`_require_auth`) and transaction recording pattern already established for withdrawal.
+## Architecture Decisions
 
-## Interface
+### Decision: Mirror Withdrawal Pattern
+Reusing `_require_auth()` and `Account.record()` because deposit preconditions are
+identical to withdrawal (authenticated session, positive amount), and consistent error
+handling reduces surface area.
 
-```python
-# src/atm/atm.py
-def deposit(self, amount: float) -> float:
-    """
-    Deposit cash into the current session's account.
+### Decision: Separate Cash and Cheque Methods
+Using `deposit_cash()` and `deposit_check()` instead of a single `deposit(type, amount)`
+because their side effects differ (cash level vs. hold state) and explicit method names
+make the domain model self-documenting without a type-switch inside one method.
 
-    Returns the new account balance.
-    Raises ATMError for non-positive amounts.
-    Raises NotAuthenticatedError / AccountLockedError if session is invalid.
-    """
-    session = self._require_auth()
-    if amount <= 0:
-        raise ATMError("Deposit amount must be positive.")
-    session.account.balance += amount
-    self.cash_available += amount
-    session.account.record("deposit", amount, f"Deposit of {amount}")
-    return session.account.balance
+## Data Flow
+```
+User calls deposit_cash(amount) or deposit_check(amount)
+ │
+ ▼
+_require_auth() — raises NotAuthenticatedError or AccountLockedError if invalid
+ │
+ ▼
+Validate amount > 0 — raises ATMError if not
+ │
+ ▼
+Update Account.balance
+Update ATM.cash_available  (cash only — cheque does not add physical cash)
+Append Transaction record  (cheque record includes pending-hold flag)
+ │
+ ▼
+Return new balance
 ```
 
 ## Error Cases
@@ -40,13 +46,6 @@ def deposit(self, amount: float) -> float:
 | Account locked | `AccountLockedError` |
 | Amount ≤ 0 | `ATMError` |
 
-## Data Impact
-
-- `Account.balance` increases.
-- `ATM.cash_available` increases (models physical cash added to the machine).
-- `Account.transactions` gains a new `"deposit"` record.
-
-## Testing Strategy
-
-Mirror the withdrawal test structure in `tests/test_deposit.py`. Each scenario in
-`openspec/changes/add-deposit/specs/deposit/spec.md` maps to one test function.
+## File Changes
+- `src/atm/atm.py` — add `deposit_cash()` and `deposit_check()` methods
+- `tests/test_deposit.py` — new file, one test per scenario in the delta spec

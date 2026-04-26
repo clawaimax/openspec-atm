@@ -1,94 +1,52 @@
----
-id: withdrawal
-title: Cash Withdrawal
-status: accepted
-version: 1.0.0
----
+# Cash Withdrawal Specification
 
-# Cash Withdrawal
+## Purpose
+Cash dispensing with balance and ATM cash level validation for authenticated users.
 
-## Overview
+## Requirements
 
-An authenticated user can withdraw cash from their account. The ATM verifies that:
+### Requirement: Cash Withdrawal
+The system SHALL allow authenticated users to withdraw cash, subject to account balance
+and ATM cash availability checks.
 
-1. The account has sufficient funds.
-2. The ATM machine itself has sufficient physical cash.
+#### Scenario: Successful cash withdrawal
+- GIVEN the user is authenticated with account `1001` having a balance of `$2,500.00`
+- AND the ATM has `$10,000.00` cash available
+- WHEN the user requests a withdrawal of `$500.00`
+- THEN the ATM dispenses `$500.00`
+- AND the account balance is updated to `$2,000.00`
+- AND the ATM cash level is reduced to `$9,500.00`
+- AND a withdrawal transaction record is created
 
-On success the account balance is reduced and the ATM cash level is updated. The
-transaction is recorded on the account.
+#### Scenario: Withdrawal refused due to insufficient account funds
+- GIVEN the user is authenticated with account `1001` having a balance of `$200.00`
+- AND the ATM has sufficient cash
+- WHEN the user requests a withdrawal of `$500.00`
+- THEN the withdrawal is refused
+- AND the account balance remains `$200.00`
+- AND the ATM cash level is unchanged
+- AND the system reports "insufficient funds"
 
-## Actors
+#### Scenario: Withdrawal refused due to insufficient ATM cash
+- GIVEN the user is authenticated with account `1001` having a balance of `$2,500.00`
+- AND the ATM has only `$100.00` cash available
+- WHEN the user requests a withdrawal of `$500.00`
+- THEN the withdrawal is refused
+- AND the account balance remains `$2,500.00`
+- AND the ATM cash level remains `$100.00`
+- AND the system reports "insufficient ATM cash"
 
-- **User** — the authenticated person operating the ATM
-- **ATM** — validates funds, dispenses cash, and records the transaction
+#### Scenario: Withdrawal of zero or negative amount is rejected
+- GIVEN the user is authenticated
+- WHEN the user requests a withdrawal of `$0.00` or a negative amount
+- THEN the withdrawal is rejected immediately
+- AND the system reports that the amount must be positive
 
-## Preconditions
+### Requirement: Withdrawal Access Control
+The system SHALL reject withdrawal attempts from unauthenticated sessions.
 
-- The user is authenticated (PIN verified, session not locked).
-- The requested amount is a positive number.
-
----
-
-## Scenarios
-
-### Scenario: Successful cash withdrawal
-
-**Given** the user is authenticated with account `1001` having a balance of `$2,500.00`  
-**And** the ATM has `$10,000.00` cash available  
-**When** the user requests a withdrawal of `$500.00`  
-**Then** the ATM dispenses `$500.00`  
-**And** the account balance is updated to `$2,000.00`  
-**And** the ATM cash level is reduced to `$9,500.00`  
-**And** a transaction record is created for the withdrawal
-
----
-
-### Scenario: Withdrawal refused due to insufficient account funds
-
-**Given** the user is authenticated with account `1001` having a balance of `$200.00`  
-**And** the ATM has sufficient cash  
-**When** the user requests a withdrawal of `$500.00`  
-**Then** the withdrawal is refused  
-**And** the account balance remains `$200.00`  
-**And** the ATM cash level is unchanged  
-**And** the system reports "insufficient funds"
-
----
-
-### Scenario: Withdrawal refused due to insufficient ATM cash
-
-**Given** the user is authenticated with account `1001` having a balance of `$2,500.00`  
-**And** the ATM has only `$100.00` cash available  
-**When** the user requests a withdrawal of `$500.00`  
-**Then** the withdrawal is refused  
-**And** the account balance remains `$2,500.00`  
-**And** the ATM cash level remains `$100.00`  
-**And** the system reports "insufficient ATM cash"
-
----
-
-### Scenario: Withdrawal of zero or negative amount is rejected
-
-**Given** the user is authenticated  
-**When** the user requests a withdrawal of `$0.00` or a negative amount  
-**Then** the withdrawal is rejected immediately  
-**And** the system reports that the amount must be positive
-
----
-
-### Scenario: Unauthenticated user cannot withdraw
-
-**Given** the user has inserted their card but has not entered their PIN  
-**When** the user attempts a withdrawal  
-**Then** the system rejects the request  
-**And** prompts the user to authenticate first
-
----
-
-## Implementation Notes
-
-- `ATM.withdraw()` raises `InsufficientFundsError` when account balance is too low.
-- `ATM.withdraw()` raises `InsufficientCashError` when ATM cash is too low.
-- `ATM.withdraw()` raises `ATMError` for zero/negative amounts.
-- Balance and cash level are mutated atomically (single-threaded in-memory demo).
-- The transaction is appended to `Account.transactions` for auditing.
+#### Scenario: Unauthenticated user cannot withdraw
+- GIVEN the user has inserted their card but has not entered their PIN
+- WHEN the user attempts a withdrawal
+- THEN the system rejects the request
+- AND prompts the user to authenticate first

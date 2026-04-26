@@ -1,43 +1,24 @@
----
-id: add-transfer
-type: ADD
-status: proposed
-target_spec: openspec/specs/transfer/spec.md
----
-
 # Proposal: Add Fund Transfer Between Accounts
 
-## Summary
-
-Allow an authenticated user to transfer funds from their own account to another account
-held at the same ATM system. This adds a new `transfer` spec and a new `ATM.transfer()`
-method.
-
-## Motivation
-
-Users currently have no way to move money between accounts without withdrawing and
-re-depositing manually. A transfer operation is a core banking feature and completes
-the basic money-movement story (withdraw → deposit → transfer).
+## Intent
+Users have no way to move money between accounts without withdrawing cash and
+re-depositing manually. A transfer operation completes the core money-movement story
+(withdraw → deposit → transfer) and is a standard ATM capability.
 
 ## Scope
+In scope:
+- Account-to-account transfer within the same ATM system
+- New `ATM.transfer(amount, destination_account_number)` method
+- New spec `openspec/specs/transfer/spec.md`
+- New test file `tests/test_transfer.py`
 
-| Area | Change |
-|------|--------|
-| New spec | `openspec/specs/transfer/spec.md` (see delta spec in this change) |
-| ATM domain | Add `ATM.transfer(amount, destination_account_number)` method |
-| Tests | New test file `tests/test_transfer.py` |
+Out of scope:
+- Transfers to external banks or routing numbers
+- Scheduled or recurring transfers
+- Transfer fees
 
-## Out of Scope
-
-- Transfers to external banks or routing numbers.
-- Scheduled / recurring transfers.
-- Transfer fees.
-
-## Acceptance Criteria
-
-- Authenticated user can transfer a positive amount to a valid destination account.
-- Source account balance decreases; destination account balance increases.
-- Transfer fails if source has insufficient funds.
-- Transfer fails if destination account does not exist.
-- Zero or negative amounts are rejected.
-- Unauthenticated / locked sessions cannot transfer.
+## Approach
+Authenticate via `_require_auth()`, look up the destination account in `self._accounts`,
+then mutate both balances atomically. Raise `InsufficientFundsError` if source funds are
+insufficient, `AccountNotFoundError` if the destination account does not exist, or
+`ATMError` for invalid amounts. No partial state — both balance mutations happen together.
