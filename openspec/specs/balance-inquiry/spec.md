@@ -1,69 +1,35 @@
----
-id: balance-inquiry
-title: Balance Inquiry
-status: accepted
-version: 1.0.0
----
+# Balance Inquiry Specification
 
-# Balance Inquiry
+## Purpose
+Account balance display for authenticated ATM users.
 
-## Overview
+## Requirements
 
-An authenticated user can request their current account balance at any point during an
-active session. The ATM displays the available balance. A simple receipt acknowledgement
-is optionally represented (see `openspec/changes/remove-receipt-option/` for a proposed
-removal of this behaviour).
+### Requirement: Balance Display
+The system SHALL display the current account balance to authenticated users.
 
-## Actors
+#### Scenario: Authenticated user checks their balance
+- GIVEN the user is authenticated with account `1001` having a balance of `$2,500.00`
+- WHEN the user requests a balance inquiry
+- THEN the ATM displays `$2,500.00`
 
-- **User** — the authenticated person operating the ATM
-- **ATM** — returns the current balance from the in-memory account store
+#### Scenario: Balance reflects previous withdrawals
+- GIVEN the user is authenticated with account `1001` having a balance of `$2,500.00`
+- AND the user has previously withdrawn `$200.00` in the same session
+- WHEN the user requests a balance inquiry
+- THEN the ATM displays `$2,300.00`
 
-## Preconditions
+### Requirement: Access Control
+The system SHALL reject balance inquiries from unauthenticated or locked sessions.
 
-- The user has successfully authenticated (PIN verified, session not locked).
+#### Scenario: Unauthenticated user cannot check balance
+- GIVEN the user has inserted their card but has not yet entered their PIN
+- WHEN the user attempts a balance inquiry
+- THEN the system rejects the request
+- AND prompts the user to authenticate first
 
----
-
-## Scenarios
-
-### Scenario: Authenticated user checks their balance
-
-**Given** the user is authenticated with account `1001` having a balance of `$2,500.00`  
-**When** the user requests a balance inquiry  
-**Then** the ATM displays `$2,500.00`
-
----
-
-### Scenario: Balance reflects previous withdrawals
-
-**Given** the user is authenticated with account `1001` having a balance of `$2,500.00`  
-**And** the user has previously withdrawn `$200.00` in the same session  
-**When** the user requests a balance inquiry  
-**Then** the ATM displays `$2,300.00`
-
----
-
-### Scenario: Unauthenticated user cannot check balance
-
-**Given** the user has inserted their card but has not yet entered their PIN  
-**When** the user attempts a balance inquiry  
-**Then** the system rejects the request  
-**And** prompts the user to authenticate first
-
----
-
-### Scenario: Locked session cannot check balance
-
-**Given** the user's account has been locked due to three failed PIN attempts  
-**When** the user attempts a balance inquiry  
-**Then** the system rejects the request  
-**And** reports that the account is locked
-
----
-
-## Implementation Notes
-
-- `ATM.check_balance()` raises `NotAuthenticatedError` if the session is not verified.
-- `ATM.check_balance()` raises `AccountLockedError` if the session is locked.
-- Balance is stored as a `float` on `Account.balance`; production systems should use `Decimal`.
+#### Scenario: Locked session cannot check balance
+- GIVEN the user's account has been locked due to three failed PIN attempts
+- WHEN the user attempts a balance inquiry
+- THEN the system rejects the request
+- AND reports that the account is locked

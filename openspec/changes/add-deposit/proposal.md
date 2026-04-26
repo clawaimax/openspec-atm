@@ -1,44 +1,24 @@
----
-id: add-deposit
-type: ADD
-status: proposed
-target_spec: openspec/specs/deposit/spec.md
----
-
 # Proposal: Add Deposit Functionality
 
-## Summary
-
-Introduce a new **Deposit** capability that allows an authenticated user to deposit
-physical cash into their account at the ATM. This adds a new spec and a new method
-to the ATM domain model.
-
-## Motivation
-
-Users currently have no way to add funds without visiting a teller. An in-machine deposit
-slot is a standard ATM feature and rounds out the core money-movement capabilities alongside
-withdrawal and (future) transfer.
+## Intent
+Users currently have no way to add funds at the ATM without visiting a teller.
+Adding deposit capability — both cash and cheque — rounds out the core money-movement
+story alongside withdrawal and (future) transfer.
 
 ## Scope
+In scope:
+- Cash deposit: `ATM.deposit_cash(amount)` — account balance and ATM cash level increase
+- Cheque deposit: `ATM.deposit_check(amount)` — account balance updated with pending-hold flag
+- New spec `openspec/specs/deposit/spec.md` with two requirements (Deposit Cash, Deposit Check)
+- New test file `tests/test_deposit.py`
 
-| Area | Change |
-|------|--------|
-| New spec | `openspec/specs/deposit/spec.md` (see `specs/deposit/spec.md` in this change) |
-| ATM domain | Add `ATM.deposit(amount)` method |
-| Session | No change — authentication precondition is the same |
-| Tests | New test file `tests/test_deposit.py` |
+Out of scope:
+- Envelope-based deposit validation (requires hardware integration)
+- Partial hold period release logic
+- Transfers counted as deposit-type transactions
 
-## Out of Scope
-
-- Envelope-based deposit validation (requires hardware integration).
-- Cheque deposits.
-- Partial hold periods.
-
-## Acceptance Criteria
-
-- Authenticated users can deposit a positive amount.
-- The account balance increases by the deposited amount.
-- The ATM cash level increases by the deposited amount.
-- A transaction record is created.
-- Unauthenticated or locked sessions cannot deposit.
-- Zero or negative deposit amounts are rejected.
+## Approach
+Mirror the withdrawal pattern: authenticate via `_require_auth()`, validate the amount,
+update balances, record the transaction. Two separate methods keep the side effects explicit
+and the domain model self-documenting. Cheque deposits add a pending-hold flag to the
+transaction record to represent clearance lag; they do not increase ATM cash level.

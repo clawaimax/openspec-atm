@@ -1,55 +1,39 @@
----
-id: modify-authentication-lockout
-type: MODIFY
-artifact: design
----
-
 # Design: Configurable Lockout Threshold
 
-## ATM Changes
+## Technical Approach
+Replace the module-level `MAX_PIN_ATTEMPTS = 3` constant with instance fields on both
+`ATM` and `Session`. `ATM` accepts the threshold at construction and passes it to each
+new `Session` in `insert_card()`, keeping `Session` as an internal detail that never
+reads from global state.
 
-```python
-# src/atm/atm.py
-@dataclass
-class ATM:
-    cash_available: float
-    max_pin_attempts: int = 3          # new field
-    _accounts: Dict[str, Account] = field(default_factory=dict)
-    _session: Optional[Session] = field(default=None, init=False)
+## Architecture Decisions
 
-    def insert_card(self, account_number: str) -> Session:
-        account = self._accounts.get(account_number)
-        if account is None:
-            raise AccountNotFoundError(...)
-        self._session = Session(account=account, max_attempts=self.max_pin_attempts)
-        return self._session
+### Decision: Instance Field Over Module Constant
+Storing the threshold on `ATM` and `Session` instances because:
+- Enables per-machine configuration without code changes
+- Avoids global mutable state
+- Default of `3` preserves all existing callers with no breaking change
+
+### Decision: ATM Owns the Configuration
+`ATM` receives `max_pin_attempts` and forwards it to `Session`, rather than `Session`
+reading from an external config, because `ATM` is the public API boundary and `Session`
+is an internal implementation detail.
+
+## Data Flow
+```
+ATM(cash_available=..., max_pin_attempts=5) constructed
+ │
+ ▼
+insert_card() creates Session(account=..., max_attempts=5)
+ │
+ ▼
+enter_pin() increments _attempts, compares to max_attempts
+ │
+ ▼
+Lockout fires after N failures  (N = configured threshold)
 ```
 
-## Session Changes
-
-```python
-# src/atm/session.py
-@dataclass
-class Session:
-    account: Account
-    max_attempts: int = 3              # was module-level constant MAX_PIN_ATTEMPTS
-    _attempts: int = field(default=0, init=False)
-    ...
-
-    def enter_pin(self, pin: str) -> bool:
-        ...
-        self._attempts += 1
-        if self._attempts >= self.max_attempts:   # was MAX_PIN_ATTEMPTS
-            self._locked = True
-        return False
-```
-
-## Backward Compatibility
-
-Default value of `max_pin_attempts=3` preserves existing behaviour; no breaking change
-to callers that do not pass the parameter.
-
-## Test Coverage
-
-Add `test_account_locked_after_custom_attempt_limit` that creates `ATM(cash_available=...,
-max_pin_attempts=5)` and verifies lockout fires after 5 failures, not 3.
+## File Changes
+- `src/atm/atm.py` — add `max_pin_attempts: int = 3` field; pass to `Session` in `insert_card()`
+- `src/atm/session.py` — replace `MAX_PIN_ATTEMPTS` constant with `max_attempts: int = 3` instance field
+- `tests/test_authentication.py` — add custom threshold scenario test

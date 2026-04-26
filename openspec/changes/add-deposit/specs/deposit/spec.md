@@ -1,59 +1,50 @@
----
-id: deposit
-title: Cash Deposit
-status: proposed
-version: 0.1.0
-change: add-deposit
----
+# Delta for Deposit
 
-# Cash Deposit  *(delta spec — proposed addition)*
+## ADDED Requirements
 
-## Overview
+### Requirement: Deposit Cash
+The system SHALL allow authenticated users to deposit physical cash into their account.
 
-An authenticated user can deposit cash into their account via the ATM. The deposited
-amount is added to the account balance and the ATM cash level is updated accordingly.
+#### Scenario: Successful cash deposit
+- GIVEN the user is authenticated with account `1001` having a balance of `$800.00`
+- AND the ATM has `$10,000.00` cash available
+- WHEN the user deposits `$200.00` in cash
+- THEN the account balance is updated to `$1,000.00`
+- AND the ATM cash level increases to `$10,200.00`
+- AND a cash deposit transaction record is created
 
-## Preconditions
+#### Scenario: Cash deposit of zero or negative amount is rejected
+- GIVEN the user is authenticated
+- WHEN the user attempts to deposit `$0.00` or a negative amount in cash
+- THEN the deposit is rejected
+- AND the system reports that the amount must be positive
+- AND the balance is unchanged
 
-- The user is authenticated (PIN verified, session not locked).
-- The deposit amount is a positive number.
+#### Scenario: Unauthenticated user cannot deposit cash
+- GIVEN the user has inserted their card but has not entered their PIN
+- WHEN the user attempts a cash deposit
+- THEN the system rejects the request
+- AND prompts the user to authenticate first
 
----
+### Requirement: Deposit Check
+The system SHALL allow authenticated users to deposit a cheque into their account,
+with the deposited amount held pending clearance.
 
-## Scenarios
+#### Scenario: Successful cheque deposit
+- GIVEN the user is authenticated with account `1001` having a balance of `$800.00`
+- WHEN the user inserts a cheque for `$500.00`
+- THEN the account balance is updated to `$1,300.00`
+- AND a cheque deposit transaction record is created with a pending-hold flag
 
-### Scenario: Successful cash deposit
+#### Scenario: Cheque deposit does not increase ATM cash level
+- GIVEN the user is authenticated
+- AND the ATM has `$10,000.00` cash available
+- WHEN the user deposits a cheque for `$500.00`
+- THEN the ATM cash level remains `$10,000.00`
+- AND only the account balance increases
 
-**Given** the user is authenticated with account `1001` having a balance of `$800.00`  
-**And** the ATM has `$10,000.00` cash available  
-**When** the user deposits `$200.00`  
-**Then** the account balance is updated to `$1,000.00`  
-**And** the ATM cash level increases to `$10,200.00`  
-**And** a deposit transaction record is created
-
----
-
-### Scenario: Deposit of zero or negative amount is rejected
-
-**Given** the user is authenticated  
-**When** the user attempts to deposit `$0.00` or a negative amount  
-**Then** the deposit is rejected  
-**And** the system reports that the amount must be positive  
-**And** the balance is unchanged
-
----
-
-### Scenario: Unauthenticated user cannot deposit
-
-**Given** the user has inserted their card but has not entered their PIN  
-**When** the user attempts a deposit  
-**Then** the system rejects the request  
-**And** prompts the user to authenticate first
-
----
-
-## Implementation Notes
-
-- Mirrors `ATM.withdraw()` in structure; see `design.md` in this change for the method
-  signature.
-- ATM cash level increases on deposit (physical cash added to the machine).
+#### Scenario: Unauthenticated user cannot deposit a cheque
+- GIVEN the user has inserted their card but has not entered their PIN
+- WHEN the user attempts a cheque deposit
+- THEN the system rejects the request
+- AND prompts the user to authenticate first
