@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img" aria-labelledby="title desc">
+  <title id="title">ATM OpenSpec Demo introductory video</title>
+  <desc id="desc">A clickable preview card for the repository introductory video.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="52%" stop-color="#1e3a8a"/>
+      <stop offset="100%" stop-color="#0f766e"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="20" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="1280" height="720" rx="36" fill="url(#bg)"/>
+  <g opacity="0.18" fill="none" stroke="#ffffff" stroke-width="2">
+    <path d="M120 170h1040M120 270h1040M120 370h1040M120 470h1040M120 570h1040"/>
+    <path d="M220 120v500M420 120v500M620 120v500M820 120v500M1020 120v500"/>
+  </g>
+  <g filter="url(#shadow)">
+    <circle cx="640" cy="360" r="118" fill="#ffffff" opacity="0.94"/>
+    <path d="M610 292l120 68-120 68z" fill="#1e3a8a"/>
+  </g>
+  <text x="640" y="155" text-anchor="middle" fill="#ffffff" font-family="Inter, Arial, sans-serif" font-size="58" font-weight="800">
+    ATM OpenSpec Demo
+  </text>
+  <text x="640" y="610" text-anchor="middle" fill="#dbeafe" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="600">
+    Click to watch the introductory video
+  </text>
+</svg>
