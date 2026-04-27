@@ -5,6 +5,13 @@ as the domain. The terminal application is intentionally *not* the focus — the
 show how OpenSpec organises specs, changes, delta specs, and scenarios, and how specifications
 drive both implementation and validation.
 
+
+## Introductory Video
+
+<video src="assets/intro-video.mp4" controls width="100%">
+  Your browser does not support the video tag. You can download the introductory video from `assets/intro-video.mp4`.
+</video>
+
 ---
 
 ## Table of Contents
