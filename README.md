@@ -8,11 +8,8 @@ drive both implementation and validation.
 
 ## Introductory Video
 
-[![ATM OpenSpec Demo introductory video](assets/intro-video-preview.svg)](https://github.com/clawaimax/openspec-atm/raw/main/assets/intro-video.mp4)
+▶️ **[Download/watch the introductory video](assets/intro-video.mp4)**
 
-▶️ **[Watch the introductory video](https://github.com/clawaimax/openspec-atm/raw/main/assets/intro-video.mp4)**
-
-> GitHub READMEs do not render inline `<video>` players, so the preview above links directly to the MP4.
 
 ---
 
