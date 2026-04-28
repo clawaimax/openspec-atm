@@ -10,7 +10,6 @@ drive both implementation and validation.
 
 ▶️ **[Download/watch the introductory video](assets/intro-video.mp4)**
 
-GitHub READMEs do not reliably render inline MP4 video previews from repository files, so this README links directly to the video instead.
 
 ---
 
