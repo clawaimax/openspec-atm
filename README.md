@@ -260,23 +260,23 @@ the change folder.
 
 ### Accepted specs (current truth)
 
-These three specs are accepted. They describe what the ATM does right now.
+These four specs are accepted. They describe what the ATM does right now.
 
 | Spec | File | What it covers |
 |------|------|----------------|
 | `authentication` | `openspec/specs/authentication/spec.md` | PIN validation, session lockout |
 | `balance-inquiry` | `openspec/specs/balance-inquiry/spec.md` | Checking account balance |
 | `withdrawal` | `openspec/specs/withdrawal/spec.md` | Withdrawing cash, fund and ATM-cash checks |
+| `transfer` | `openspec/specs/transfer/spec.md` | Account-to-account transfers within the ATM system |
 
 ### Proposed changes (not yet accepted)
 
-These four changes are in progress. None of them affect `openspec/specs/` until they are
+These three changes are in progress. None of them affect `openspec/specs/` until they are
 accepted and promoted.
 
 | Change | Type | What it proposes |
 |--------|------|-----------------|
 | `add-deposit` | ADD | New Deposit feature — Deposit Cash and Deposit Check requirements, new spec, new tests |
-| `add-transfer` | ADD | New Fund Transfer feature — account-to-account transfers |
 | `modify-authentication-lockout` | MODIFY | Make lockout threshold configurable instead of hard-coded at 3 |
 | `remove-receipt-option` | REMOVE | Strip unused receipt mention from the balance-inquiry spec |
 
@@ -293,11 +293,11 @@ flowchart TD
         A[Authentication\nPIN validation · session lockout]
         B[Balance Inquiry]
         C[Withdrawal\nfund check · ATM cash check]
+        E[Transfer\naccount-to-account transfers]
     end
 
     subgraph pending ["Proposed — not yet accepted"]
         D[Deposit\nadd-deposit · ADD\nDeposit Cash + Deposit Check]
-        E[Transfer\nadd-transfer · ADD]
         F[Configurable Lockout\nmodify-authentication-lockout · MODIFY]
         G[Remove Receipt Mention\nremove-receipt-option · REMOVE]
     end
@@ -572,17 +572,18 @@ atm/
     ├── specs/                    # accepted / current specs
     │   ├── authentication/spec.md
     │   ├── balance-inquiry/spec.md
-    │   └── withdrawal/spec.md
+    │   ├── withdrawal/spec.md
+    │   └── transfer/spec.md
     └── changes/                  # proposed changes (not yet accepted)
         ├── add-deposit/
         │   ├── proposal.md       # WHY: motivation and scope
         │   ├── design.md         # HOW: technical approach and decisions
         │   ├── tasks.md
         │   └── specs/deposit/spec.md   # WHAT: Deposit Cash + Deposit Check requirements
-        ├── add-transfer/
-        │   ├── proposal.md       # WHY
+        ├── archive/2026-04-27-add-transfer/
+        │   ├── proposal.md       # archived WHY
         │   ├── tasks.md
-        │   └── specs/transfer/spec.md  # WHAT
+        │   └── specs/transfer/spec.md  # archived delta WHAT
         ├── modify-authentication-lockout/
         │   ├── proposal.md       # WHY
         │   ├── design.md         # HOW
