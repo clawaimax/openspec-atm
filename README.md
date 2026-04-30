@@ -8,7 +8,7 @@ drive both implementation and validation.
 
 ## Introductory Video
 
-▶️ **[Download/watch the introductory video](assets/intro-video.mp4)**
+▶️ **[Download/watch the introductory video](https://github.com/clawaimax/openspec-atm/raw/refs/heads/main/assets/intro-video.mp4)**
 
 
 ---
