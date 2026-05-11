@@ -24,7 +24,10 @@ def _menu() -> str:
     print("\n--- ATM Menu ---")
     print("1. Check balance")
     print("2. Withdraw cash")
-    print("3. Exit")
+    print("3. Transfer funds")
+    print("4. Deposit cash")
+    print("5. Deposit cheque")
+    print("6. Exit")
     return input("Choose an option: ").strip()
 
 
@@ -39,7 +42,7 @@ def run() -> None:
         print(f"Error: {exc}")
         return
 
-    for _ in range(3):
+    for _ in range(atm.max_pin_attempts):
         pin = input("Enter PIN: ").strip()
         try:
             ok = atm.enter_pin(pin)
@@ -51,7 +54,7 @@ def run() -> None:
             break
         print("Incorrect PIN.")
     else:
-        print("Account locked after 3 failed attempts.")
+        print(f"Account locked after {atm.max_pin_attempts} failed attempts.")
         return
 
     while True:
@@ -70,6 +73,28 @@ def run() -> None:
             except (ATMError, ValueError) as exc:
                 print(f"Error: {exc}")
         elif choice == "3":
+            try:
+                dest = input("Enter destination account number: ").strip()
+                amount = float(input("Enter amount to transfer: $").strip())
+                new_balance = atm.transfer(amount, dest)
+                print(f"Transferred ${amount:,.2f} to {dest}. New balance: ${new_balance:,.2f}")
+            except (ATMError, ValueError) as exc:
+                print(f"Error: {exc}")
+        elif choice == "4":
+            try:
+                amount = float(input("Enter cash amount to deposit: $").strip())
+                new_balance = atm.deposit_cash(amount)
+                print(f"Deposited ${amount:,.2f}. New balance: ${new_balance:,.2f}")
+            except (ATMError, ValueError) as exc:
+                print(f"Error: {exc}")
+        elif choice == "5":
+            try:
+                amount = float(input("Enter cheque amount to deposit: $").strip())
+                new_balance = atm.deposit_check(amount)
+                print(f"Cheque of ${amount:,.2f} deposited (pending). New balance: ${new_balance:,.2f}")
+            except (ATMError, ValueError) as exc:
+                print(f"Error: {exc}")
+        elif choice == "6":
             print("Thank you for using the ATM. Goodbye.")
             atm.end_session()
             break
