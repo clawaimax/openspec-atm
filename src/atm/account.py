@@ -4,9 +4,10 @@ from typing import List
 
 @dataclass
 class Transaction:
-    kind: str  # "withdraw", "deposit", "transfer"
+    kind: str  # "withdraw", "deposit", "transfer", "deposit_check"
     amount: float
     description: str
+    pending: bool = False
 
 
 @dataclass
@@ -17,5 +18,5 @@ class Account:
     balance: float
     transactions: List[Transaction] = field(default_factory=list)
 
-    def record(self, kind: str, amount: float, description: str) -> None:
-        self.transactions.append(Transaction(kind, amount, description))
+    def record(self, kind: str, amount: float, description: str, pending: bool = False) -> None:
+        self.transactions.append(Transaction(kind, amount, description, pending))

@@ -32,6 +32,7 @@ class AccountNotFoundError(ATMError):
 @dataclass
 class ATM:
     cash_available: float
+    max_pin_attempts: int = 3
     _accounts: Dict[str, Account] = field(default_factory=dict)
     _session: Optional[Session] = field(default=None, init=False)
 
@@ -46,7 +47,7 @@ class ATM:
         account = self._accounts.get(account_number)
         if account is None:
             raise AccountNotFoundError(f"Account {account_number!r} not found.")
-        self._session = Session(account=account)
+        self._session = Session(account=account, max_attempts=self.max_pin_attempts)
         return self._session
 
     def _require_auth(self) -> Session:
@@ -84,6 +85,40 @@ class ATM:
         session.account.balance -= amount
         self.cash_available -= amount
         session.account.record("withdraw", amount, f"Withdrawal of {amount}")
+        return session.account.balance
+
+    def transfer(self, amount: float, dest_account_number: str) -> float:
+        session = self._require_auth()
+        if amount <= 0:
+            raise ATMError("Transfer amount must be positive.")
+        dest = self._accounts.get(dest_account_number)
+        if dest is None:
+            raise AccountNotFoundError(f"Destination account {dest_account_number!r} not found.")
+        if amount > session.account.balance:
+            raise InsufficientFundsError(
+                f"Requested {amount}, but account balance is {session.account.balance}."
+            )
+        session.account.balance -= amount
+        dest.balance += amount
+        session.account.record("transfer-out", amount, f"Transfer to {dest_account_number}")
+        dest.record("transfer-in", amount, f"Transfer from {session.account.account_number}")
+        return session.account.balance
+
+    def deposit_cash(self, amount: float) -> float:
+        session = self._require_auth()
+        if amount <= 0:
+            raise ATMError("Deposit amount must be positive.")
+        session.account.balance += amount
+        self.cash_available += amount
+        session.account.record("deposit_cash", amount, f"Cash deposit of {amount}")
+        return session.account.balance
+
+    def deposit_check(self, amount: float) -> float:
+        session = self._require_auth()
+        if amount <= 0:
+            raise ATMError("Deposit amount must be positive.")
+        session.account.balance += amount
+        session.account.record("deposit_check", amount, f"Cheque deposit of {amount}", pending=True)
         return session.account.balance
 
     def end_session(self) -> None:

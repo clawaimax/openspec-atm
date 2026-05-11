@@ -1,5 +1,6 @@
 """
 Tests for: openspec/specs/authentication/spec.md
+         + openspec/changes/modify-authentication-lockout/specs/authentication/spec.md
 
 Each test corresponds to one scenario in that spec. The test function name
 mirrors the scenario title so the mapping is immediately visible.
@@ -12,6 +13,7 @@ from atm.atm import (
     AccountNotFoundError,
     NotAuthenticatedError,
 )
+from atm.account import Account
 
 
 # ---------------------------------------------------------------------------
@@ -100,3 +102,59 @@ def test_atm_services_unavailable_after_account_lock(atm):
 
     with pytest.raises(AccountLockedError):
         atm.check_balance()
+
+
+# ---------------------------------------------------------------------------
+# Scenario: Account locked after configured number of failed PIN attempts
+# (from modify-authentication-lockout delta spec)
+# ---------------------------------------------------------------------------
+
+def test_account_locked_after_configured_number_of_failed_pin_attempts():
+    machine = ATM(cash_available=1_000.00, max_pin_attempts=2)
+    machine.load_account(Account("1001", "Alice Smith", "1234", 500.00))
+
+    session = machine.insert_card("1001")
+    machine.enter_pin("wrong")
+    machine.enter_pin("wrong")
+
+    assert session.is_locked is True
+
+
+# ---------------------------------------------------------------------------
+# Scenario: Custom lockout threshold is respected
+# ---------------------------------------------------------------------------
+
+def test_custom_lockout_threshold_is_respected():
+    machine = ATM(cash_available=1_000.00, max_pin_attempts=5)
+    machine.load_account(Account("1001", "Alice Smith", "1234", 500.00))
+
+    session = machine.insert_card("1001")
+    machine.enter_pin("wrong")
+    machine.enter_pin("wrong")
+    machine.enter_pin("wrong")
+    machine.enter_pin("wrong")
+
+    assert session.is_locked is False
+
+    machine.enter_pin("wrong")
+
+    assert session.is_locked is True
+
+
+# ---------------------------------------------------------------------------
+# Scenario: Default lockout threshold is 3
+# ---------------------------------------------------------------------------
+
+def test_default_lockout_threshold_is_3():
+    machine = ATM(cash_available=1_000.00)
+    machine.load_account(Account("1001", "Alice Smith", "1234", 500.00))
+
+    session = machine.insert_card("1001")
+    machine.enter_pin("wrong")
+    machine.enter_pin("wrong")
+
+    assert session.is_locked is False
+
+    machine.enter_pin("wrong")
+
+    assert session.is_locked is True

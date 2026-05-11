@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from typing import Optional
 
 from .account import Account
 
@@ -9,6 +8,7 @@ MAX_PIN_ATTEMPTS = 3
 @dataclass
 class Session:
     account: Account
+    max_attempts: int = MAX_PIN_ATTEMPTS
     _attempts: int = field(default=0, init=False)
     _authenticated: bool = field(default=False, init=False)
     _locked: bool = field(default=False, init=False)
@@ -32,6 +32,6 @@ class Session:
             self._authenticated = True
             return True
         self._attempts += 1
-        if self._attempts >= MAX_PIN_ATTEMPTS:
+        if self._attempts >= self.max_attempts:
             self._locked = True
         return False
