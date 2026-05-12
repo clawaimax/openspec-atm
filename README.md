@@ -225,12 +225,11 @@ proposal, delta spec, design, or tasks if the scope or approach needs refinement
 
 The developer reads `tasks.md` and the delta spec (`specs/<name>/spec.md`). The delta spec
 is the implementation contract — every scenario should end up with corresponding behaviour
-and tests. Tasks can be completed in any of three ways:
+and tests. Tasks are usually completed in one of two preferred ways:
 
-1. **Manually** — code each task by hand.
-2. **Step by step with an LLM pair-programmer** (e.g. Claude Code, Cursor) — work through
+1. **Step by step with an LLM pair-programmer** (e.g. Claude Code, Cursor) — work through
    `tasks.md` one task at a time, reviewing each diff before moving on.
-3. **`/opsx:apply`** (optional) — hand the entire `tasks.md` to the agent and let it work
+2. **`/opsx:apply`** (optional) — hand the entire `tasks.md` to the agent and let it work
    through the list end-to-end; most useful for small, well-scoped changes.
 
 **ATM example:** `openspec/changes/add-deposit/tasks.md` lists:
