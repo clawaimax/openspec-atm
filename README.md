@@ -3,7 +3,7 @@
 A minimal Python project that demonstrates **OpenSpec** concepts using a simple ATM machine
 as the domain. The terminal application is intentionally *not* the focus — the goal is to
 show how OpenSpec organises specs, changes, delta specs, and scenarios, and how specifications
-drive both implementation and validation.
+drive both implementation and verification.
 
 
 ## Introductory Video
@@ -21,7 +21,7 @@ drive both implementation and validation.
 4. [How to Read the Project](#4-how-to-read-the-project)
 5. [Example Walkthroughs](#5-example-walkthroughs)
 6. [Cursor and AI-Agent Usage](#6-cursor-and-ai-agent-usage)
-7. [Validation](#7-validation)
+7. [Verification](#7-verification)
 8. [Project Layout](#8-project-layout)
 
 ---
@@ -167,6 +167,7 @@ same five-step lifecycle. The diagram below shows how a proposed change becomes 
 > - `/opsx:propose` — create or refine a proposal and delta spec
 > - `/opsx:explore` — review implications and draft a design before implementation
 > - `/opsx:apply` — implement or update code according to an accepted or proposed spec
+> - `/opsx:verify` — check implementation evidence against artifacts (expanded workflow)
 > - `/opsx:archive` — promote an accepted delta spec into `openspec/specs/` and archive the change
 
 ```mermaid
@@ -174,9 +175,9 @@ flowchart LR
     P([Propose]) --> R([Review & Refine])
     R -->|needs rework| P
     R --> I([Implement])
-    I --> V([Validate])
-    V -->|validation fails| I
-    V -->|validation passes| PR([Promote])
+    I --> V([Verify])
+    V -->|issues found| I
+    V -->|ready| PR([Promote])
     PR --> S[(openspec/specs/\nstatus: accepted)]
 ```
 
@@ -223,25 +224,26 @@ corresponding behaviour.
 
 Use `/opsx:apply` to implement or update code according to an accepted or proposed spec.
 
-### Step 4 — Validate
+### Step 4 — Verify `/opsx:verify`
 
-Run `openspec validate --strict` to verify that every scenario in the delta spec has
-a corresponding implementation, and that nothing has been left out. Validation must
-pass before a change can be promoted.
+Use `/opsx:verify <change-name>` to have the AI inspect the codebase for evidence that
+the implementation matches the change artifacts. Its **Completeness** check looks for
+implemented requirements and scenario test coverage.
 
-```bash
-openspec validate --strict
+```text
+/opsx:verify add-deposit
 ```
 
-This checks that:
-- Every requirement in the spec has implementation coverage.
-- Every scenario can be traced to a verifiable behaviour.
-- No orphaned scenarios exist without a corresponding spec entry.
+This is an agent-based review, not a deterministic CLI gate. It reports issues as
+CRITICAL, WARNING, or SUGGESTION and does not block archive by itself. The command is
+part of OpenSpec's expanded workflow; enable it with `openspec config profile`, select
+the expanded workflows, then run `openspec update` in the project.
 
 ### Step 5 — Archive / promote `/opsx:archive`
 
-Once all tasks are done and validation passes, the delta spec is moved to `openspec/specs/`,
-the `status` is set to `accepted`, and the change folder is removed or archived.
+Once all tasks are done, tests pass, and verification issues are addressed, the delta spec
+is moved to `openspec/specs/`, the `status` is set to `accepted`, and the change folder
+is removed or archived.
 
 **ATM example (hypothetical):** After add-deposit is accepted:
 ```
@@ -355,11 +357,11 @@ Each **Requirement** is a binding rule (using SHALL / MUST / SHOULD). Each **Sce
 under it is a concrete GIVEN/WHEN/THEN example. A spec may contain any number of
 requirements, and each requirement may have any number of scenarios.
 
-### How scenarios map to validation
+### How scenarios map to verification
 
-Scenario titles in a spec serve as the canonical name for a behaviour. When validating,
-`openspec validate --strict` checks that every scenario can be traced to an implementation.
-Scenarios are also mirrored as test function names (snake_case):
+Scenario titles in a spec serve as the canonical name for a behaviour. During
+`/opsx:verify`, the AI checks whether scenarios have implementation evidence and test
+coverage. Scenarios are also mirrored as test function names (snake_case):
 
 ```
 Scenario title in spec.md:
@@ -378,7 +380,7 @@ Test function in test_authentication.py:
 3. **Never implement something from `openspec/changes/` into production code without first
    promoting it to `openspec/specs/`** — unless the task explicitly says it is in-progress
    and unapproved work.
-4. Every scenario you implement must be traceable and validatable.
+4. Every scenario you implement must be traceable to code and tests.
 
 ---
 
@@ -411,7 +413,7 @@ The `add-deposit` change introduces a brand-new feature with no prior spec.
 2. Write `ATM.deposit_cash(amount: float) -> float` and `ATM.deposit_check(amount: float) -> float`
    in `src/atm/atm.py`.
 3. Write `tests/test_deposit.py` with tests covering every scenario in the delta spec.
-4. Run `openspec validate --strict` — all scenarios must have implementation coverage.
+4. Run the test suite, then use `/opsx:verify add-deposit` to check scenario coverage.
 5. Move the delta spec to `openspec/specs/deposit/spec.md`, set `status: accepted`,
    bump the version to `1.0.0`, and archive the change folder.
 
@@ -442,7 +444,7 @@ from `v1.0.0`.
 2. Update `src/atm/session.py` to accept a `max_attempts` parameter instead of the constant.
 3. Update `src/atm/atm.py` to pass `max_pin_attempts` to `Session` on `insert_card()`.
 4. Add the new scenario tests to `tests/test_authentication.py`.
-5. Run `openspec validate --strict` and confirm all scenarios pass.
+5. Run the test suite, then use `/opsx:verify modify-authentication-lockout` to check scenario coverage.
 6. On promotion: merge the delta scenarios into `openspec/specs/authentication/spec.md`,
    bump to `1.1.0`, archive the change folder.
 
@@ -464,7 +466,7 @@ stripped. No new scenarios or implementation are involved.
 1. The proposal confirms there is no code to delete — the receipt was never implemented.
 2. Edit `openspec/specs/balance-inquiry/spec.md` — remove the receipt mention from the Overview.
 3. Bump the spec version to `1.1.0`.
-4. Run `openspec validate --strict` to confirm no orphaned scenarios remain.
+4. Use `/opsx:verify remove-receipt-option` to check that the spec cleanup matches the codebase.
 5. Archive the change folder — no source code changes required.
 
 ---
@@ -491,41 +493,51 @@ AI agent operating in it) to:
   - `/opsx:propose` — create or refine a proposal and delta spec (**WHY** + **WHAT**)
   - `/opsx:explore` — review implications, draft or refine a design (**HOW**)
   - `/opsx:apply` — implement according to spec
+  - `/opsx:verify` — inspect implementation evidence against artifacts (expanded workflow)
   - `/opsx:archive` — promote and archive
 
 The diagram below shows the decision process an agent should follow before writing any code.
 
 ```mermaid
 flowchart TD
-    Start([Start: implement a feature]) --> Q1{Is the feature\naccepted?}
-    Q1 -->|Yes| RS["Read openspec/specs/\naccepted spec"]
-    Q1 -->|No — proposed| RC["Read openspec/changes/\ndelta spec + design.md"]
-    RS --> Impl["Write / update src/ code\n(/opsx:apply)"]
+    Start([Start: implement a feature]) --> Q1{Is the feature
+accepted?}
+    Q1 -->|Yes| RS["Read openspec/specs/
+accepted spec"]
+    Q1 -->|No — proposed| RC["Read openspec/changes/
+delta spec + design.md"]
+    RS --> Impl["Write / update src/ code
+(/opsx:apply)"]
     RC --> Impl
-    Impl --> V["openspec validate --strict"]
-    V -->|fails| Impl
-    V -->|"passes — promoting"| Prom["Move delta spec →\nopenspec/specs/\nset status: accepted\narchive change folder\n(/opsx:archive)"]
-    V -->|"passes — not promoting"| Done([Done])
+    Impl --> T["Run project tests"]
+    T -->|fails| Impl
+    T --> V["/opsx:verify <change-name>"]
+    V -->|issues found| Impl
+    V -->|"ready — promoting"| Prom["Move delta spec →
+openspec/specs/
+set status: accepted
+archive change folder
+(/opsx:archive)"]
+    V -->|"ready — not promoting"| Done([Done])
     Prom --> Done
 ```
 
 ---
 
-## 7. Validation
+## 7. Verification
 
-OpenSpec uses `openspec validate --strict` to verify that every scenario in the accepted
-specs (and proposed delta specs) has corresponding implementation coverage.
+OpenSpec separates structural validation from implementation verification:
 
-```bash
-openspec validate --strict
-```
+- `openspec validate` checks OpenSpec artifacts for structural issues.
+- `/opsx:verify <change-name>` asks the AI agent to inspect implementation evidence across
+  Completeness, Correctness, and Coherence.
 
-Scenarios in accepted specs define what must be implemented. The mapping is explicit:
-scenario titles correspond to test function names in the test suite (snake_case, lowercased).
-`openspec validate --strict` checks this correspondence and flags any scenario without a
-traceable implementation, or any implementation without a corresponding scenario.
+For this project, scenarios in accepted specs define what must be implemented. The mapping
+is explicit: scenario titles correspond to test function names in the test suite
+(snake_case, lowercased). `/opsx:verify` can review whether those scenarios have matching
+code and tests, but it is advisory rather than a hard archive gate.
 
-The diagram below shows how accepted specs drive validation across the ATM features.
+The diagram below shows how accepted specs drive tests and verification across the ATM features.
 
 ```mermaid
 flowchart LR
@@ -535,15 +547,17 @@ flowchart LR
         s3[withdrawal/spec.md]
     end
 
-    V["openspec validate --strict"]
+    T["pytest"]
+    V["/opsx:verify"]
 
-    s1 -->|"requirements + scenarios"| V
-    s2 -->|"requirements + scenarios"| V
-    s3 -->|"requirements + scenarios"| V
+    s1 -->|"requirements + scenarios"| T
+    s2 -->|"requirements + scenarios"| T
+    s3 -->|"requirements + scenarios"| T
+    T --> V
 ```
 
-Proposed changes do not yet have full implementation coverage — those are validated as
-part of the implementation step for each change, before promotion.
+Proposed changes do not yet have full implementation coverage — those are tested and
+verified as part of the implementation step for each change, before promotion.
 
 ---
 
@@ -596,7 +610,7 @@ atm/
 ```
 
 The diagram below shows the key relationships between directories — how specs drive both
-source code and validation, and how the Cursor rules govern AI-agent behaviour across the repo.
+source code and verification, and how the Cursor rules govern AI-agent behaviour across the repo.
 
 ```mermaid
 flowchart TD
@@ -604,12 +618,12 @@ flowchart TD
         specs["openspec/specs/\naccepted specs"]
         changes["openspec/changes/\nproposed changes"]
         src["src/atm/\natm.py · session.py · account.py"]
-        valid["openspec validate --strict"]
+        valid["pytest + /opsx:verify"]
         rules[".cursor/rules/openspec.mdc\nAI-agent instructions"]
     end
 
     specs -->|"drives implementation of"| src
-    specs -->|"informs"| valid
+    specs -->|"drives tests + informs"| valid
     changes -->|"proposes updates to"| specs
     rules -->|"governs AI agents editing"| src
     rules -->|"governs AI agents editing"| specs
