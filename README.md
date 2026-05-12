@@ -195,9 +195,7 @@ implement tasks, verify the result, sync deltas, and archive the change.
 ```mermaid
 flowchart LR
     E([Explore\noptional]) --> P([Propose])
-    P --> R([Review & Refine])
-    R -->|needs rework| P
-    R --> I([Implement])
+    P --> I([Implement])
     I --> V([Verify])
     V -->|issues found| I
     V -->|ready| S([Sync])
@@ -205,10 +203,14 @@ flowchart LR
     A --> O[(openspec/changes/archive/\nYYYY-MM-DD-<name>/)]
 ```
 
-### Step 1 — Propose `/opsx:propose`
+### Step 1 — Propose `/opsx:propose` (optionally preceded by `/opsx:explore`)
 
-Use `/opsx:propose` to create the full planning set in one step: `proposal.md`, delta
-specs, `design.md`, and `tasks.md`.
+Before proposing, you can run `/opsx:explore` to have a focused conversation about
+requirements and tradeoffs. `/opsx:explore` creates no artifacts and is most useful when
+the scope or approach is still unclear.
+
+Once ready, use `/opsx:propose` to create the full planning set in one step: `proposal.md`,
+delta specs, `design.md`, and `tasks.md`.
 
 **ATM example:** `openspec/changes/add-deposit/` contains:
 - `proposal.md` — why deposit matters and what is in scope
@@ -216,30 +218,27 @@ specs, `design.md`, and `tasks.md`.
 - `design.md` — the two-method approach (`deposit_cash`, `deposit_check`)
 - `tasks.md` — implementation checklist
 
-### Optional pre-step — Explore `/opsx:explore`
+Review and edit the generated artifacts before moving to implementation — adjust the
+proposal, delta spec, design, or tasks if the scope or approach needs refinement.
 
-Use `/opsx:explore` *before* `/opsx:propose` when requirements are unclear. It is a
-pre-proposal conversation for investigation and tradeoffs; it creates no artifacts.
+### Step 2 — Implement
 
-### Step 2 — Review / refine
+The developer reads `tasks.md` and the delta spec (`specs/<name>/spec.md`). The delta spec
+is the implementation contract — every scenario should end up with corresponding behaviour
+and tests. Tasks can be completed in any of three ways:
 
-Review the generated artifacts before implementation. Edit the proposal, delta spec,
-design, or tasks if the scope or approach needs clarification.
-
-### Step 3 — Implement `/opsx:apply`
-
-With the artifacts agreed upon, a developer or AI agent reads `tasks.md` and builds the
-feature. The delta spec is the implementation contract (**WHAT** must be true) — every
-scenario should have corresponding behaviour and tests.
+1. **Manually** — code each task by hand.
+2. **Step by step with an LLM pair-programmer** (e.g. Claude Code, Cursor) — work through
+   `tasks.md` one task at a time, reviewing each diff before moving on.
+3. **`/opsx:apply`** (optional) — hand the entire `tasks.md` to the agent and let it work
+   through the list end-to-end; most useful for small, well-scoped changes.
 
 **ATM example:** `openspec/changes/add-deposit/tasks.md` lists:
 - Add `ATM.deposit_cash(amount)` and `ATM.deposit_check(amount)` to `src/atm/atm.py`
 - Write `tests/test_deposit.py` covering every scenario in the delta spec
 - Update README
 
-Use `/opsx:apply` to implement or update code according to a current or proposed spec.
-
-### Step 4 — Verify `/opsx:verify`
+### Step 3 — Verify `/opsx:verify`
 
 Use `/opsx:verify <change-name>` to have the AI inspect the codebase for evidence that
 the implementation matches the change artifacts. Its **Completeness** check looks for
@@ -253,7 +252,7 @@ This is an agent-based review, not a deterministic CLI gate. It reports issues a
 CRITICAL, WARNING, or SUGGESTION and does not block archive by itself. `/opsx:verify` is
 part of the expanded workflow.
 
-### Step 5 — Sync and archive `/opsx:sync` + `/opsx:archive`
+### Step 4 — Sync and archive `/opsx:sync` + `/opsx:archive`
 
 Once all tasks are done, tests pass, and verification issues are addressed, sync the delta
 spec into `openspec/specs/` and archive the change.
