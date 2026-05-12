@@ -8,8 +8,10 @@ drive both implementation and verification.
 
 ## Introductory Video
 
-▶️ **[Download/watch the introductory video](https://github.com/clawaimax/openspec-atm/raw/refs/heads/main/assets/intro-video.mp4)**
+<video src="assets/intro-video.mp4" controls width="720"></video>
 
+If your Markdown viewer does not render the player, [open the intro video](assets/intro-video.mp4)
+(note: GitHub may download the MP4 instead of streaming it).
 
 ---
 
@@ -27,6 +29,8 @@ drive both implementation and verification.
 ---
 
 ## 1. What is OpenSpec?
+
+Official docs: <https://github.com/Fission-AI/OpenSpec>
 
 OpenSpec is a lightweight convention for managing **behavioural specifications** alongside
 code. The core idea is simple:
@@ -61,11 +65,11 @@ openspec/specs/withdrawal/spec.md       ← what withdrawal does today
 ```
 
 If something is in `openspec/specs/`, it is implemented and verified. If it is not in
-`openspec/specs/`, treat it as proposed or out of scope until it is promoted.
+`openspec/specs/`, treat it as proposed or out of scope until its delta has been synced.
 
 ### Spec format
 
-Accepted specs follow a simple, consistent structure:
+Specs follow a simple, consistent structure:
 
 ```
 # Feature Specification
@@ -92,37 +96,45 @@ requirement, many scenarios.
 ### Changes as proposed updates
 
 A **change** is a folder under `openspec/changes/` that contains a proposal for modifying
-the system. A change is not accepted until it has been reviewed, implemented, and promoted.
-Until then, the code in `openspec/specs/` remains the truth.
+the system. A change is not part of the current spec set until its deltas are synced into
+`openspec/specs/` and the change folder is archived. Until then, `openspec/specs/` remains
+the source of truth.
 
-Each change has a type:
+Delta specs use three section labels:
 
-| Type | Meaning |
-|------|---------|
-| `ADD` | Introduces a brand-new spec (new feature) |
-| `MODIFY` | Updates an existing accepted spec |
-| `REMOVE` | Deletes or strips content from an existing spec |
+| Delta section | Meaning |
+|---------------|---------|
+| `## ADDED Requirements` | New requirements or scenarios to add |
+| `## MODIFIED Requirements` | Existing requirements or scenarios to revise |
+| `## REMOVED Requirements` | Existing requirements or scenarios to remove |
 
-The diagram below shows how the three change types in this project flow toward `openspec/specs/`
-when promoted.
+These are section headings inside a delta spec, not mutually exclusive labels. A
+single delta spec can contain ADDED, MODIFIED, and REMOVED sections at the same time.
+This project names each example change after its dominant operation as a local convention;
+OpenSpec does not require that naming pattern.
+
+| Change | Dominant delta section | What it proposes |
+|--------|------------------------|-----------------|
+| `add-deposit` | ADDED | Deposit requirements and scenarios |
+| `modify-authentication-lockout` | MODIFIED | Configurable lockout threshold instead of hard-coded 3 |
+| `remove-receipt-option` | REMOVED | Strip unused receipt mention from balance inquiry |
+
+The diagram below shows how the example changes eventually sync deltas into
+`openspec/specs/` and then move to the archive.
 
 ```mermaid
 flowchart LR
-    subgraph ADD ["ADD — new feature"]
-        a["add-deposit · add-transfer"]
-    end
-    subgraph MODIFY ["MODIFY — update existing"]
-        m["modify-authentication-lockout"]
-    end
-    subgraph REMOVE ["REMOVE — strip content"]
-        r["remove-receipt-option"]
+    subgraph changes ["openspec/changes/"]
+        a["add-deposit\nADDED Requirements"]
+        m["modify-authentication-lockout\nMODIFIED Requirements"]
+        r["remove-receipt-option\nREMOVED Requirements"]
     end
 
-    ADD -->|"promote: new spec.md created"| specs
-    MODIFY -->|"promote: existing spec.md updated"| specs
-    REMOVE -->|"promote: existing spec.md trimmed"| specs
+    a -->|"sync"| specs
+    m -->|"sync"| specs
+    r -->|"sync"| specs
 
-    specs[(openspec/specs/)]
+    specs[(openspec/specs/)] --> archive["archive\nopenspec/changes/archive/YYYY-MM-DD-<name>/"]
 ```
 
 ### Delta specs
@@ -133,12 +145,9 @@ A **delta spec** is a spec file inside a change folder:
 openspec/changes/add-deposit/specs/deposit/spec.md
 ```
 
-A delta spec is *not* accepted. It describes the new or modified behaviour that the change
-would introduce *if* it were accepted. It uses the same format as accepted specs, but is
-structured as a delta — showing only ADDED, MODIFIED, or REMOVED requirements.
-
-For a MODIFY change, the delta spec shows only what is different. See
-`openspec/changes/modify-authentication-lockout/specs/authentication/spec.md` for an example.
+A delta spec is not current truth yet. It describes what would change if synced into
+`openspec/specs/`. Brand-new requirements go under `## ADDED Requirements`; revisions go
+under `## MODIFIED Requirements`; removals go under `## REMOVED Requirements`.
 
 ### Artifacts
 
@@ -148,86 +157,87 @@ Each change folder contains up to four artifact files:
 |------|---------|
 | `proposal.md` | **WHY**: what is changing, motivation, and scope |
 | `design.md` | **HOW**: optional technical approach, architecture decisions, data flow |
-| `tasks.md` | Implementation checklist and promotion steps |
+| `tasks.md` | Implementation checklist and archive steps |
 | `specs/<name>/spec.md` | The delta spec — **WHAT** the change introduces |
 
-### Archive / promotion
+### Sync and archive
 
-When a change is accepted:
+When a change is complete:
 
-1. The delta spec is moved (or merged) into `openspec/specs/`.
-2. The spec's `status` is updated to `accepted` and the version is bumped.
-3. The change folder is archived or removed.
+1. Syncing merges the delta spec into `openspec/specs/`.
+2. Archiving moves the change folder to `openspec/changes/archive/YYYY-MM-DD-<name>/`.
 
-Until that happens, the change folder represents *proposed* work only.
+The archive workflow offers to sync first if the deltas have not already been merged.
+Archiving preserves the change folder for audit history.
+
+Until then, the change folder represents *proposed* work only.
 
 ---
 
 ## 2. The OpenSpec Workflow
 
-Every behaviour change — whether adding, modifying, or removing a feature — follows the
-same five-step lifecycle. The diagram below shows how a proposed change becomes an accepted spec.
+Every behaviour change follows the same lifecycle: explore when needed, propose artifacts,
+implement tasks, verify the result, sync deltas, and archive the change.
 
 > **Quick reference — OpenSpec commands:**
-> - `/opsx:propose` — create or refine a proposal and delta spec
-> - `/opsx:explore` — review implications and draft a design before implementation
-> - `/opsx:apply` — implement or update code according to an accepted or proposed spec
-> - `/opsx:verify` — check implementation evidence against artifacts (expanded workflow)
-> - `/opsx:archive` — promote an accepted delta spec into `openspec/specs/` and archive the change
+>
+> **Core profile** (default):
+> - `/opsx:explore` — clarify requirements and investigate options before creating a change; creates no artifacts
+> - `/opsx:propose` — create a change and generate planning artifacts in one step: `proposal.md`, specs, `design.md`, and `tasks.md`
+> - `/opsx:apply` — implement tasks from the change
+> - `/opsx:sync` — merge delta specs into `openspec/specs/` without archiving yet
+> - `/opsx:archive` — archive a completed change; offers to sync first if needed
+>
+> **Expanded workflow** (enable with `openspec config profile` → workflows, then `openspec update`):
+> - `/opsx:verify` — inspect implementation evidence across Completeness, Correctness, and Coherence
+> - `/opsx:new`, `/opsx:continue`, `/opsx:ff`, `/opsx:bulk-archive`, `/opsx:onboard` — additional workflow controls
 
 ```mermaid
 flowchart LR
-    P([Propose]) --> R([Review & Refine])
+    E([Explore\noptional]) --> P([Propose])
+    P --> R([Review & Refine])
     R -->|needs rework| P
     R --> I([Implement])
     I --> V([Verify])
     V -->|issues found| I
-    V -->|ready| PR([Promote])
-    PR --> S[(openspec/specs/\nstatus: accepted)]
+    V -->|ready| S([Sync])
+    S --> A([Archive])
+    A --> O[(openspec/changes/archive/\nYYYY-MM-DD-<name>/)]
 ```
 
 ### Step 1 — Propose `/opsx:propose`
 
-Someone writes a `proposal.md` describing the change (**WHY**). The proposal states the
-type (ADD / MODIFY / REMOVE), the motivation, the scope, and the acceptance criteria.
+Use `/opsx:propose` to create the full planning set in one step: `proposal.md`, delta
+specs, `design.md`, and `tasks.md`.
 
-**ATM example:** `openspec/changes/add-deposit/proposal.md` proposes adding a Deposit
-feature. It explains why (users have no way to add funds without a teller) and lists what
-changes (`ATM.deposit_cash()` and `ATM.deposit_check()` methods, new spec, new tests).
+**ATM example:** `openspec/changes/add-deposit/` contains:
+- `proposal.md` — why deposit matters and what is in scope
+- `specs/deposit/spec.md` — the Deposit Cash and Deposit Check requirements and scenarios
+- `design.md` — the two-method approach (`deposit_cash`, `deposit_check`)
+- `tasks.md` — implementation checklist
 
-Use `/opsx:propose` to create or refine a proposal and its delta spec before any code is written.
+### Optional pre-step — Explore `/opsx:explore`
 
-### Step 2 — Review / refine `/opsx:explore`
+Use `/opsx:explore` *before* `/opsx:propose` when requirements are unclear. It is a
+pre-proposal conversation for investigation and tradeoffs; it creates no artifacts.
 
-The team reviews the proposal, asks questions, and may request changes before any code is
-written. During review, a `design.md` is often added to explore the technical approach (**HOW**).
+### Step 2 — Review / refine
 
-**ATM example:** `openspec/changes/add-deposit/design.md` elaborates on the method
-signatures and explains why two separate methods (`deposit_cash`, `deposit_check`) are
-clearer than one generic method with a type parameter.
-
-The delta spec is also written or refined here:
-`openspec/changes/add-deposit/specs/deposit/spec.md` shows the exact requirements and
-scenarios the new feature must satisfy — written in GIVEN/WHEN/THEN form before a line
-of code is touched. Notice it contains *two* requirements (Deposit Cash, Deposit Check),
-each with multiple scenarios.
-
-Use `/opsx:explore` to review the implications of a proposal, explore edge cases, and
-draft or refine the design before implementation begins.
+Review the generated artifacts before implementation. Edit the proposal, delta spec,
+design, or tasks if the scope or approach needs clarification.
 
 ### Step 3 — Implement `/opsx:apply`
 
-With the proposal and delta spec agreed upon, a developer (or AI agent) reads
-`tasks.md` to find the implementation checklist and builds the feature. The delta spec
-is the implementation contract (**WHAT** must be true) — every scenario must have
-corresponding behaviour.
+With the artifacts agreed upon, a developer or AI agent reads `tasks.md` and builds the
+feature. The delta spec is the implementation contract (**WHAT** must be true) — every
+scenario should have corresponding behaviour and tests.
 
 **ATM example:** `openspec/changes/add-deposit/tasks.md` lists:
 - Add `ATM.deposit_cash(amount)` and `ATM.deposit_check(amount)` to `src/atm/atm.py`
 - Write `tests/test_deposit.py` covering every scenario in the delta spec
 - Update README
 
-Use `/opsx:apply` to implement or update code according to an accepted or proposed spec.
+Use `/opsx:apply` to implement or update code according to a current or proposed spec.
 
 ### Step 4 — Verify `/opsx:verify`
 
@@ -240,34 +250,35 @@ implemented requirements and scenario test coverage.
 ```
 
 This is an agent-based review, not a deterministic CLI gate. It reports issues as
-CRITICAL, WARNING, or SUGGESTION and does not block archive by itself. The command is
-part of OpenSpec's expanded workflow; enable it with `openspec config profile`, select
-the expanded workflows, then run `openspec update` in the project.
+CRITICAL, WARNING, or SUGGESTION and does not block archive by itself. `/opsx:verify` is
+part of the expanded workflow.
 
-### Step 5 — Archive / promote `/opsx:archive`
+### Step 5 — Sync and archive `/opsx:sync` + `/opsx:archive`
 
-Once all tasks are done, tests pass, and verification issues are addressed, the delta spec
-is moved to `openspec/specs/`, the `status` is set to `accepted`, and the change folder
-is removed or archived.
+Once all tasks are done, tests pass, and verification issues are addressed, sync the delta
+spec into `openspec/specs/` and archive the change.
 
-**ATM example (hypothetical):** After add-deposit is accepted:
+**ATM example (hypothetical):** After `add-deposit` is complete:
+
 ```
-openspec/changes/add-deposit/specs/deposit/spec.md
-  → openspec/specs/deposit/spec.md   (status: accepted, version: 1.0.0)
+/opsx:sync add-deposit
+  merges openspec/changes/add-deposit/specs/deposit/spec.md
+  into openspec/specs/deposit/spec.md
 
-openspec/changes/add-deposit/   ← archived or deleted
+/opsx:archive add-deposit
+  moves openspec/changes/add-deposit/
+  to openspec/changes/archive/YYYY-MM-DD-<name>/
 ```
 
-Use `/opsx:archive` to promote an accepted delta spec into `openspec/specs/` and clean up
-the change folder.
+`/opsx:archive` offers to sync first if needed, so quick changes can go straight to archive.
 
 ---
 
 ## 3. How This ATM Project Maps to OpenSpec
 
-### Accepted specs (current truth)
+### Current specs (source of truth)
 
-These four specs are accepted. They describe what the ATM does right now.
+These four specs describe what the ATM does right now.
 
 | Spec | File | What it covers |
 |------|------|----------------|
@@ -276,16 +287,16 @@ These four specs are accepted. They describe what the ATM does right now.
 | `withdrawal` | `openspec/specs/withdrawal/spec.md` | Withdrawing cash, fund and ATM-cash checks |
 | `transfer` | `openspec/specs/transfer/spec.md` | Account-to-account transfers within the ATM system |
 
-### Proposed changes (not yet accepted)
+### Proposed changes (not yet synced)
 
-These three changes are in progress. None of them affect `openspec/specs/` until they are
-accepted and promoted.
+These three changes are in progress. None of them affect `openspec/specs/` until their
+deltas are synced and the change is archived.
 
-| Change | Type | What it proposes |
-|--------|------|-----------------|
-| `add-deposit` | ADD | New Deposit feature — Deposit Cash and Deposit Check requirements, new spec, new tests |
-| `modify-authentication-lockout` | MODIFY | Make lockout threshold configurable instead of hard-coded at 3 |
-| `remove-receipt-option` | REMOVE | Strip unused receipt mention from the balance-inquiry spec |
+| Change | Dominant delta section | What it proposes |
+|--------|------------------------|-----------------|
+| `add-deposit` | ADDED | Deposit Cash and Deposit Check requirements and tests |
+| `modify-authentication-lockout` | MODIFIED | Make lockout threshold configurable instead of hard-coded at 3 |
+| `remove-receipt-option` | REMOVED | Strip unused receipt mention from the balance-inquiry spec |
 
 The `add-deposit` change is a good illustration of a spec with **multiple requirements**:
 the deposit spec covers both **Deposit Cash** and **Deposit Check**, each with its own
@@ -296,17 +307,17 @@ proposed. Arrows show which proposed changes affect which existing specs.
 
 ```mermaid
 flowchart TD
-    subgraph live ["Accepted — live today"]
+    subgraph live ["Current — live today"]
         A[Authentication\nPIN validation · session lockout]
         B[Balance Inquiry]
         C[Withdrawal\nfund check · ATM cash check]
         E[Transfer\naccount-to-account transfers]
     end
 
-    subgraph pending ["Proposed — not yet accepted"]
-        D[Deposit\nadd-deposit · ADD\nDeposit Cash + Deposit Check]
-        F[Configurable Lockout\nmodify-authentication-lockout · MODIFY]
-        G[Remove Receipt Mention\nremove-receipt-option · REMOVE]
+    subgraph pending ["Proposed — not yet synced"]
+        D[Deposit\nadd-deposit · ADDED\nDeposit Cash + Deposit Check]
+        F[Configurable Lockout\nmodify-authentication-lockout · MODIFIED]
+        G[Remove Receipt Mention\nremove-receipt-option · REMOVED]
     end
 
     F -. modifies .-> A
@@ -320,7 +331,7 @@ flowchart TD
 ### Where to start
 
 1. Read `openspec/openspec.json` — one glance at the project name, specs dir, and changes dir.
-2. Read an accepted spec in `openspec/specs/`, such as `openspec/specs/authentication/spec.md`.
+2. Read a current spec in `openspec/specs/`, such as `openspec/specs/authentication/spec.md`.
    Notice the **Purpose**, **Requirements**, and GIVEN/WHEN/THEN **Scenarios** structure.
 3. Compare the scenario names in the spec to the function names in `tests/test_authentication.py`.
    They are intentionally identical (spaces replaced with underscores, lowercased).
@@ -331,9 +342,8 @@ flowchart TD
   understand **why** (**WHY**) each change is being made.
 - For `add-deposit` and `modify-authentication-lockout`, also read `design.md` — these
   changes needed technical discussion (**HOW**) before implementation.
-- Read the delta specs under `openspec/changes/*/specs/`. Each is structured as a delta:
-  ADDED, MODIFIED, or REMOVED requirements. ADD delta specs are full requirement lists;
-  MODIFY delta specs show only what changes; REMOVE delta specs show what is stripped.
+- Read the delta specs under `openspec/changes/*/specs/`. Each can use the same delta
+  sections: `## ADDED Requirements`, `## MODIFIED Requirements`, and `## REMOVED Requirements`.
 - Notice the `add-deposit` delta spec: it has two requirements — **Deposit Cash** and
   **Deposit Check** — each with multiple scenarios. This illustrates that one spec can
   describe several related behaviours, not just one.
@@ -366,7 +376,8 @@ requirements, and each requirement may have any number of scenarios.
 
 Scenario titles in a spec serve as the canonical name for a behaviour. During
 `/opsx:verify`, the AI checks whether scenarios have implementation evidence and test
-coverage. Scenarios are also mirrored as test function names (snake_case):
+coverage. In this project, scenarios are also mirrored as test function names
+(snake_case); that naming convention is not an OpenSpec tooling rule:
 
 ```
 Scenario title in spec.md:
@@ -378,12 +389,12 @@ Test function in test_authentication.py:
 
 ### How a developer or agent should use specs before editing code
 
-1. **Check `openspec/specs/`** for the accepted spec that covers the feature you are
+1. **Check `openspec/specs/`** for the current spec that covers the feature you are
    touching. Read the requirements and scenarios — those define the required behaviour.
 2. **Check `openspec/changes/`** if you are implementing a proposed feature. The delta spec
    and `design.md` in the change folder are your implementation contract.
-3. **Never implement something from `openspec/changes/` into production code without first
-   promoting it to `openspec/specs/`** — unless the task explicitly says it is in-progress
+3. **Do not treat something from `openspec/changes/` as current behaviour until its delta
+   is synced into `openspec/specs/`** — unless the task explicitly says it is in-progress
    and unapproved work.
 4. Every scenario you implement must be traceable to code and tests.
 
@@ -391,9 +402,9 @@ Test function in test_authentication.py:
 
 ## 5. Example Walkthroughs
 
-### Adding Deposit — an ADD change
+### Adding Deposit — an ADDED delta example
 
-The `add-deposit` change introduces a brand-new feature with no prior spec.
+The `add-deposit` change introduces brand-new requirements under `## ADDED Requirements`.
 
 **The artifacts tell the story (WHAT / WHY / HOW):**
 
@@ -403,15 +414,15 @@ The `add-deposit` change introduces a brand-new feature with no prior spec.
   `ATM.withdraw()`, with explicit side-effect differences for each deposit type.
 - `specs/deposit/spec.md` — **WHAT**: the delta spec with two requirements (Deposit Cash,
   Deposit Check), each with multiple scenarios covering success, rejection, and access control.
-- `tasks.md` — implementation checklist ending with promotion steps.
+- `tasks.md` — implementation checklist ending with archive steps.
 
 **Workflow commands:**
-- `/opsx:propose` — used to draft `proposal.md` and the initial delta spec.
-- `/opsx:explore` — used to draft `design.md` and reason through the two-method approach.
+- `/opsx:propose` — creates `proposal.md`, the delta spec, `design.md`, and `tasks.md`.
+- `/opsx:explore` — optional pre-proposal investigation if requirements are unclear.
 - `/opsx:apply` — implements `ATM.deposit_cash()` and `ATM.deposit_check()` according to
   the delta spec scenarios.
-- `/opsx:archive` — moves the delta spec to `openspec/specs/deposit/spec.md`, sets
-  `status: accepted`, and archives the change folder.
+- `/opsx:sync` — merges the deposit delta into `openspec/specs/deposit/spec.md`.
+- `/opsx:archive` — moves the change folder to `openspec/changes/archive/YYYY-MM-DD-<name>/`.
 
 **To implement it:**
 1. Read the delta spec requirements and scenarios (two requirements, multiple scenarios each).
@@ -419,18 +430,16 @@ The `add-deposit` change introduces a brand-new feature with no prior spec.
    in `src/atm/atm.py`.
 3. Write `tests/test_deposit.py` with tests covering every scenario in the delta spec.
 4. Run the test suite, then use `/opsx:verify add-deposit` to check scenario coverage.
-5. Move the delta spec to `openspec/specs/deposit/spec.md`, set `status: accepted`,
-   bump the version to `1.0.0`, and archive the change folder.
+5. Sync the delta spec into `openspec/specs/deposit/spec.md`, then archive the change folder.
 
-### Modifying Authentication Lockout — a MODIFY change
+### Modifying Authentication Lockout — a MODIFIED delta example
 
-The `modify-authentication-lockout` change updates an *existing* accepted spec. It does
+The `modify-authentication-lockout` change updates an existing current spec. It does
 not replace the whole spec — only the affected requirement changes.
 
-**Key difference from ADD:** The delta spec at
-`openspec/changes/modify-authentication-lockout/specs/authentication/spec.md` contains
-only `MODIFIED Requirements` — not the full spec. It explicitly states what it replaces
-from `v1.0.0`.
+**Key point:** The delta spec at
+`openspec/changes/modify-authentication-lockout/specs/authentication/spec.md` uses
+`## MODIFIED Requirements` to show the behaviour being revised.
 
 **The artifacts (WHAT / WHY / HOW):**
 - `proposal.md` — **WHY**: security teams need per-ATM lockout policies without code changes.
@@ -439,10 +448,10 @@ from `v1.0.0`.
   three scenarios (configurable threshold, custom threshold respected, default is 3).
 
 **Workflow commands:**
-- `/opsx:propose` — drafted the proposal explaining why configurable lockout is needed.
-- `/opsx:explore` — produced the design showing `max_pin_attempts` on the `ATM` dataclass.
+- `/opsx:propose` — creates the proposal, delta spec, design, and task list.
 - `/opsx:apply` — updates `session.py` and `atm.py` per the design.
-- `/opsx:archive` — merges the delta scenarios into the accepted spec and bumps to `v1.1.0`.
+- `/opsx:sync` — merges the delta scenarios into `openspec/specs/authentication/spec.md`.
+- `/opsx:archive` — preserves the completed change under `openspec/changes/archive/YYYY-MM-DD-<name>/`.
 
 **To implement it:**
 1. Read the delta spec — it modifies the Account Lockout requirement with three scenarios.
@@ -450,29 +459,27 @@ from `v1.0.0`.
 3. Update `src/atm/atm.py` to pass `max_pin_attempts` to `Session` on `insert_card()`.
 4. Add the new scenario tests to `tests/test_authentication.py`.
 5. Run the test suite, then use `/opsx:verify modify-authentication-lockout` to check scenario coverage.
-6. On promotion: merge the delta scenarios into `openspec/specs/authentication/spec.md`,
-   bump to `1.1.0`, archive the change folder.
+6. Sync the delta scenarios into `openspec/specs/authentication/spec.md`, then archive the change folder.
 
-### Removing Receipt Option — a REMOVE change
+### Removing Receipt Option — a REMOVED delta example
 
 The `remove-receipt-option` change strips content from an existing spec. The receipt
 concept was a placeholder with no implementation.
 
-**Key difference:** The delta spec shows only `REMOVED Requirements` — what is being
+**Key point:** The delta spec uses `## REMOVED Requirements` to show what is being
 stripped. No new scenarios or implementation are involved.
 
 **The artifacts (WHAT / WHY / HOW):**
 - `proposal.md` — **WHY**: the receipt placeholder confuses implementers; it was never built.
 - `specs/balance-inquiry/spec.md` — **WHAT**: a REMOVED Requirements delta, noting the
   deprecated Receipt Acknowledgement requirement.
-- No `design.md` — a REMOVE with no code changes needs no technical design.
+- No `design.md` — this REMOVED-only delta needs no technical design because there are no code changes.
 
 **To implement it:**
 1. The proposal confirms there is no code to delete — the receipt was never implemented.
 2. Edit `openspec/specs/balance-inquiry/spec.md` — remove the receipt mention from the Overview.
-3. Bump the spec version to `1.1.0`.
-4. Use `/opsx:verify remove-receipt-option` to check that the spec cleanup matches the codebase.
-5. Archive the change folder — no source code changes required.
+3. Use `/opsx:verify remove-receipt-option` to check that the spec cleanup matches the codebase.
+4. Sync the delta into `openspec/specs/balance-inquiry/spec.md`, then archive the change folder.
 
 ---
 
@@ -483,48 +490,42 @@ The file `.cursor/rules/openspec.mdc` is loaded by Cursor for every file matchin
 AI agent operating in it) to:
 
 - Treat `openspec/specs/*/spec.md` as the authoritative description of current behaviour.
-- Treat `openspec/changes/*/` as proposed work — not yet accepted, not yet implemented.
+- Treat `openspec/changes/*/` as proposed work — not yet synced, not yet implemented.
 - Mirror scenario titles to implementation and test function names exactly.
 - Not add a scenario without corresponding implementation, and vice versa.
-- On promotion, move the delta spec to `openspec/specs/` and archive the change folder.
+- When ready, sync the delta spec into `openspec/specs/` and archive the change folder.
 
 **For any AI agent (Cursor, Claude Code, etc.):**
 
-- Before generating code for a feature, read the accepted spec for that feature first.
+- Before generating code for a feature, read the current spec for that feature first.
 - Before generating code for a proposed feature, read the change's delta spec and `design.md`.
 - Do not implement anything from `openspec/changes/` directly into `openspec/specs/` —
-  that promotion step requires explicit instruction (or `/opsx:archive`).
+  that archive step requires explicit instruction (or `/opsx:archive`).
 - Use the OpenSpec commands as entry points:
-  - `/opsx:propose` — create or refine a proposal and delta spec (**WHY** + **WHAT**)
-  - `/opsx:explore` — review implications, draft or refine a design (**HOW**)
+  - `/opsx:explore` — optional pre-proposal investigation; creates no artifacts
+  - `/opsx:propose` — create proposal, specs, design, and tasks (**WHY** + **WHAT** + **HOW**)
   - `/opsx:apply` — implement according to spec
+  - `/opsx:sync` — merge deltas into `openspec/specs/`
   - `/opsx:verify` — inspect implementation evidence against artifacts (expanded workflow)
-  - `/opsx:archive` — promote and archive
+  - `/opsx:archive` — archive the completed change
 
 The diagram below shows the decision process an agent should follow before writing any code.
 
 ```mermaid
 flowchart TD
-    Start([Start: implement a feature]) --> Q1{Is the feature
-accepted?}
-    Q1 -->|Yes| RS["Read openspec/specs/
-accepted spec"]
-    Q1 -->|No — proposed| RC["Read openspec/changes/
-delta spec + design.md"]
-    RS --> Impl["Write / update src/ code
-(/opsx:apply)"]
+    Start([Start: implement a feature]) --> Q1{Is the feature\ncurrent?}
+    Q1 -->|Yes| RS["Read openspec/specs/\ncurrent spec"]
+    Q1 -->|No — proposed| RC["Read openspec/changes/\ndelta spec + design.md"]
+    RS --> Impl["Write / update src/ code\n(/opsx:apply)"]
     RC --> Impl
     Impl --> T["Run project tests"]
     T -->|fails| Impl
     T --> V["/opsx:verify <change-name>"]
     V -->|issues found| Impl
-    V -->|"ready — promoting"| Prom["Move delta spec →
-openspec/specs/
-set status: accepted
-archive change folder
-(/opsx:archive)"]
-    V -->|"ready — not promoting"| Done([Done])
-    Prom --> Done
+    V -->|"ready — archiving"| Sync["Sync delta spec →\nopenspec/specs/\n(/opsx:sync)"]
+    Sync --> Arch["Move change folder →\nopenspec/changes/archive/YYYY-MM-DD-<name>/\n(/opsx:archive)"]
+    V -->|"ready — not archiving"| Done([Done])
+    Arch --> Done
 ```
 
 ---
@@ -537,12 +538,13 @@ OpenSpec separates structural validation from implementation verification:
 - `/opsx:verify <change-name>` asks the AI agent to inspect implementation evidence across
   Completeness, Correctness, and Coherence.
 
-For this project, scenarios in accepted specs define what must be implemented. The mapping
-is explicit: scenario titles correspond to test function names in the test suite
-(snake_case, lowercased). `/opsx:verify` can review whether those scenarios have matching
-code and tests, but it is advisory rather than a hard archive gate.
+For this project, scenarios in current specs define what must be implemented. This repo
+uses an explicit local convention: scenario titles correspond to snake_case test function
+names. OpenSpec tooling does not require that naming convention, but `/opsx:verify` can
+review whether scenarios have matching code and tests. Verification is advisory rather
+than a hard archive gate.
 
-The diagram below shows how accepted specs drive tests and verification across the ATM features.
+The diagram below shows how current specs drive tests and verification across the ATM features.
 
 ```mermaid
 flowchart LR
@@ -562,7 +564,7 @@ flowchart LR
 ```
 
 Proposed changes do not yet have full implementation coverage — those are tested and
-verified as part of the implementation step for each change, before promotion.
+verified as part of the implementation step for each change, before archiving.
 
 ---
 
@@ -588,12 +590,12 @@ atm/
 │   └── test_withdrawal.py        # scenarios from withdrawal spec
 └── openspec/
     ├── openspec.json             # project configuration
-    ├── specs/                    # accepted / current specs
+    ├── specs/                    # current specs
     │   ├── authentication/spec.md
     │   ├── balance-inquiry/spec.md
     │   ├── withdrawal/spec.md
     │   └── transfer/spec.md
-    └── changes/                  # proposed changes (not yet accepted)
+    └── changes/                  # proposed changes (not yet synced)
         ├── add-deposit/
         │   ├── proposal.md       # WHY: motivation and scope
         │   ├── design.md         # HOW: technical approach and decisions
@@ -620,7 +622,7 @@ source code and verification, and how the Cursor rules govern AI-agent behaviour
 ```mermaid
 flowchart TD
     subgraph repo ["atm/ repository"]
-        specs["openspec/specs/\naccepted specs"]
+        specs["openspec/specs/\ncurrent specs"]
         changes["openspec/changes/\nproposed changes"]
         src["src/atm/\natm.py · session.py · account.py"]
         valid["pytest + /opsx:verify"]
