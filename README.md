@@ -31,9 +31,14 @@ drive both implementation and verification.
 OpenSpec is a lightweight convention for managing **behavioural specifications** alongside
 code. The core idea is simple:
 
-> **Spec = WHAT** the system does
-> **Proposal = WHY** the system should change
-> **Design = HOW** the change will be implemented
+> **Spec = WHAT**
+> The system does
+>
+> **Proposal = WHY**
+> The system should change
+>
+> **Design = HOW**
+> The change will be implemented
 
 Specs are the source of truth. Changes to behaviour must go through a structured proposal
 process before they touch the codebase.
@@ -55,8 +60,8 @@ openspec/specs/balance-inquiry/spec.md  ← what balance inquiry does today
 openspec/specs/withdrawal/spec.md       ← what withdrawal does today
 ```
 
-If something is in `openspec/specs/`, it is implemented and validated. If it is not in
-`openspec/specs/`, the system does not do it.
+If something is in `openspec/specs/`, it is implemented and verified. If it is not in
+`openspec/specs/`, treat it as proposed or out of scope until it is promoted.
 
 ### Spec format
 
